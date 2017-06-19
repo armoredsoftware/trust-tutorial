@@ -1090,14 +1090,14 @@ A \emph{chain of trust} from $X_0$ to $X_n$:
   \begin{itemize}
   \item On initial measurement after startup
     \begin{itemize}
-    \item \texttt{SENTER} and \texttt{SINIT} ran
-    \item \texttt{SINIT} measured the MLE
+    \item $\extend{0x00..0}{\hash{\mathtt{SINIT Policy}}}$ \texttt{SENTER} and \texttt{SINIT} ran
+    \item $\extend{0x00..0}{\hash{\mathtt{MLE}}}$ \texttt{SINIT} measured the MLE
     \item MLE was correct on startup
     \end{itemize}
   \item On measurement after application startup
     \begin{itemize}
-    \item OS was correct on startup and was started by MLE
-    \item Application was correct on startup and was started by OS
+    \item $\extend{0x00..0}{\hash{\mathtt{OS}}}$ OS was correct on startup and was started by MLE
+    \item $\extend{0x00..0}{\hash{\mathtt{app}}}$ Application was correct on startup and was started by OS
     \end{itemize}
   \end{itemize}
 
