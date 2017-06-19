@@ -731,6 +731,385 @@ A \emph{chain of trust} from $X_0$ to $X_n$:
   \end{block}
 }
 
+\frame{\frametitle{Remote Data Acquisition}
+
+  Boot and appraise remote system for covert data acquisition
+
+  \begin{itemize}
+    \item Target reset triggers target boot initialization
+    \item Target initial boot goes through BIOS and device startup
+    \item Target secondary boot establishes comm link and ``phones home''
+    \item Appraiser evaluates target
+    \item Appraiser responds to target with OS image
+    \item Target boots OS image
+    \item Target begins operation
+    \item Appraiser evaluates target
+    \item Target begins data acquisition and transmission
+  \end{itemize}
+}
+
+\frame{\frametitle{Assumptions}
+
+  General assumptions:
+
+  \begin{itemize}
+  \item Nonces, keys and hashes cannot be guessed
+  \item Perfect cryptography
+  \item All messages are carried by the adversary
+  \end{itemize}
+
+  System specific assumptions:
+
+  \begin{itemize}
+  \item Secure communication subsystem is trustworthy
+  \item Target knows what to communicate with
+  \item TPM present on the target
+  \item AIK is established and certified prior to system launch
+  \end{itemize}
+
+}
+
+\frame{\frametitle{Designing A Trusted System}
+
+  What assets should be protected and how?
+
+  \begin{itemize}
+  \item What assets must be handled confidentially?
+  \item What assets must be handled with integrity?
+  \item What assets and behaviors must be appraised?
+  \item What behaviors must be prevented?
+  \end{itemize}
+
+  Some initial observations:
+
+  \begin{itemize}
+  \item Initial boot software - integrity, must be appraised
+  \item Communication addresses - confidentiality
+  \item Hardware and tamper protections - integrity, must be appraised
+  \item Operating system - integrity, must be appraised
+  \item Data transmission key - confidentiality
+  \end{itemize}
+
+}
+
+\frame{\frametitle{Trust}
+
+\begin{block}{Trust is:}
+  \begin{itemize}
+  \item Strong identification
+  \item Direct observation of good behavior
+  \item Indirect observation of good behavior by a trusted third party
+  \end{itemize}
+\end{block}
+
+\begin{block}{Late Launch is:}
+  \begin{itemize}
+  \item Initial measurement taken and stored by roots of trust for
+    measurement and storage
+  \item Reporting performed by root of trust for reporting
+  \item Trust chains transitively from roots of trust outward
+  \item System is constructed of good parts
+  \end{itemize}
+\end{block}
+
+}
+
+\frame{\frametitle{Roots of Trust}
+  \begin{itemize}
+  \item Root of trust for measurement
+    \begin{itemize}
+    \item SENTER for launch
+    \item Initial measurement taken by SINIT
+    \item Hardware-based TPM initialization
+    \end{itemize}
+  \item Root of trust for storage
+    \begin{itemize}
+    \item TPM storage root key (SRK)
+    \item Locality enforcement
+    \item TPM separation
+    \end{itemize}
+  \item Root of trust for reporting
+    \begin{itemize}
+    \item TPM endorsement key (EK)
+    \item TPM separation
+    \end{itemize}
+  \end{itemize}
+}
+
+\frame{\frametitle{Initial Design Decisions}
+
+  \begin{block}{Design Decisions}
+    \begin{itemize}
+    \item What are measurement responsibilities?
+    \item What is in the MLE?
+    \item Where are measurements stored?
+    \item How is locality assigned?
+    \end{itemize}
+  \end{block}
+
+}
+
+\frame{\frametitle{Measurement Responsibilities}
+  
+  \begin{itemize}
+  \item \texttt{SENTER} measures \texttt{SINIT} policy
+  \item \texttt{SINIT} measures the Measured Launch Environment (MLE)
+  \item Initial boot measures hardware and Secondary boot software
+  \item Secondary boot measures OS
+  \item OS measures components as they start
+  \end{itemize}
+  
+  \begin{block}{Measurement Relation}
+    \[
+    \mathtt{SENTER} \rightarrow \mathtt{SINIT} \rightarrow
+    \mathtt{MLE} \rightarrow \mathtt{OS} \rightarrow \mathtt{app}
+    \]
+  \end{block}
+
+  \begin{itemize}
+  \item No measurement loops
+  \item Everything is measured
+  \end{itemize}
+
+}
+
+\frame{\frametitle{Locality}
+
+  \begin{block}{Locality = Access Control for PCRs}
+    \begin{itemize}
+    \item Each PCR is assigned a locality
+    \item Only processes with locality greater than or equal a PCR's
+      locality may modify it
+    \item Increases monotonically starting at \texttt{SENTER} invocation
+    \end{itemize}
+  \end{block}
+
+
+  \begin{block}{Locality and What Runs There}
+  \begin{tabular}{ll}
+    \emph{Locality} & \emph{Purpose} \\ \hline\hline
+    4 & Trusted Hardware/SINIT Policy \\
+    3 & Other MLE Components \\
+    2 & Operating System \\
+    1 & Applications Static \\
+    0 & RTM/Legacy \\
+  \end{tabular}
+  \end{block}
+}
+
+\frame{\frametitle{Locality Rules of Thumb}
+
+  \begin{itemize}
+  \item Only SENTER runs in locality 4
+  \item Only SINIT runs in locality 3
+  \item OS and core system run in locality 2
+  \item Applications run in locality 1
+  \item Locality 0 is rarely used
+  \end{itemize}
+}
+
+\frame{\frametitle{Traditional Measurement Storage}
+
+  \begin{tabular}{ll}
+    \emph{PCR} & \emph{Contents} \\ \hline
+    0--15 & Static RTM \\
+    16 & Debug \\
+    17 & Locality 4 measurements by \texttt{SENTER} \\
+    18 & Locality 3 measurements by \texttt{SINIT} \\
+    19 & Locality 2 measurements by MLE and OS \\
+    20 & Locality 1 measurements by applications \\
+    21--22 & T/OS controlled \\
+    23 & Application specific measurements \\
+  \end{tabular}
+
+\begin{block}{Need a PCR?}
+\begin{itemize}
+\item Available non-resettable PCRs are 8-15
+\item Available resettable PCRs are 16,23
+\end{itemize}
+\end{block}
+
+}
+
+\frame{\frametitle{Resetting PCRs}
+  \begin{block}{Non-Resettable}
+    \begin{itemize}
+    \item History since reboot
+    \item Reset only on reboot
+    \item Good for recording trajectory
+    \end{itemize}
+  \end{block}
+  \begin{block}{Resettable}
+    \begin{itemize}
+    \item No history
+    \item Reset before use
+    \item Good for one-off user data
+    \end{itemize}
+  \end{block}
+
+  \begin{itemize}
+  \item Reset requires appropriate permissions based on locality
+  \item A PCR is resettable if defined in platform spec
+  \end{itemize}
+}
+
+
+\frame{\frametitle{What is in the MLE?}
+
+  \begin{itemize}
+  \item Anything measured by SINIT is in the MLE by definition
+  \item MLE could be the initial boot image or the entire boot image
+  \item How much granularity desired in measurements?
+  \end{itemize}
+
+  \begin{block}{What is in the MLE?}
+    \begin{itemize}
+    \item Initial boot image
+    \item Nothing more
+    \end{itemize}
+  \end{block}
+
+}
+
+\frame{\frametitle{Where Are Measurements Stored?}
+
+  \begin{itemize}
+  \item Initial measurement storage location is standard
+  \item Typically 1 hash per measurement, but could be a sequence
+  \end{itemize}
+
+  \begin{block}{PCRs 17 and 18}
+  \begin{itemize}
+  \item SINIT Policy measured by \texttt{SENTER} into PCR 17
+  \item MLE Measured by \texttt{SINIT} into PCR 18
+  \item PCRs 17 \& 18 are non-resettable
+  \end{itemize}
+  \end{block}
+}
+
+\frame{\frametitle{Where Are Measurements Stored?}
+  \begin{itemize}
+  \item Later measurements must be designed
+  \item One big hash, many hashes, one PCR, many PCRs
+  \end{itemize}
+
+  \begin{block}{PCRs 19 and 20}
+    \begin{itemize}
+    \item OS measured into PCR 19
+    \item Application(s) measured into PCR 20
+    \end{itemize}
+  \end{block}
+}
+
+\frame{\frametitle{What are the Measurements?}
+  \begin{itemize}
+  \item Measure the OS
+    \begin{itemize}
+    \item OS measured as one hash
+    \item OS measured as a hash sequence by the OS startup
+    \end{itemize}
+  \item Applications measured as one hash each
+  \item Ordering application measurement?
+    \begin{itemize}
+    \item Enforce application hash order by sequencing startup
+    \item Use multiple PCRs
+    \item Produce multiple good hashes in appraiser
+    \end{itemize}
+  \item Measurement \emph{must} be performed as components are started
+  \end{itemize}
+}
+
+\frame{\frametitle{What Should Appraisal Say?}
+  
+  \begin{itemize}
+  \item Measurement granularity
+    \begin{itemize}
+    \item One hash says good or bad for all system binaries and is
+      simple to take
+    \item Many hashes extending a PCR says good or bad for all system
+      binaries including order
+    \end{itemize}
+  \item One or Many PCRs
+    \begin{itemize}
+    \item One PCR says good or bad for all system binaries with order
+    \item Many PCRs says good or bad for individual system binaries
+      without order
+    \end{itemize}
+  \item Resettable or Non-Resettable
+    \begin{itemize}
+    \item Resettable ignores history prior to reset
+    \item Non-resettable captures history from system startup
+    \end{itemize}
+  \end{itemize}
+
+}
+
+\frame{\frametitle{Where are Measurements Stored? (Redux)}
+
+  \begin{itemize}
+  \item Poky Linux is measured as one hash into PCR 19
+    \begin{itemize}
+    \item Need to know good or bad on startup
+    \item Using Poky Linux unmodified
+    \end{itemize}
+  \item Application is measured as one hash into PCR 20
+    \begin{itemize}
+    \item Need to know good or bad on startup
+    \item Only one application
+    \end{itemize}
+  \end{itemize}
+
+  \begin{block}{PCRs 19 and 20}
+    \begin{itemize}
+    \item OS measured into PCR 19 by secondary boot prior to start
+    \item Application(s) measured into PCR 20 by OS prior to start
+    \end{itemize}
+  \end{block}
+}
+
+\frame{\frametitle{How is Locality Assigned?}
+
+  \begin{itemize}
+  \item No reason to deviate from standard locality mapping
+  \item No reason to reset PCRs
+  \end{itemize}
+
+  \begin{block}{Locality Assignment}
+    \begin{itemize}
+    \item PCR 17 - Locality 4, non-resettable
+    \item PCR 18 - Locality 3, non-resettable
+    \item PCR 19 - Locality 2, non-resettable
+    \item PCR 20 - Locality 1, non-resettable
+    \end{itemize}
+  \end{block}
+
+}
+
+\frame{\frametitle{What The Appraiser Knows}
+
+  \begin{itemize}
+  \item On initial measurement after startup
+    \begin{itemize}
+    \item \texttt{SENTER} and \texttt{SINIT} ran
+    \item \texttt{SINIT} measured the MLE
+    \item MLE was correct on startup
+    \end{itemize}
+  \item On measurement after application startup
+    \begin{itemize}
+    \item OS was correct on startup and was started by MLE
+    \item Application was correct on startup and was started by OS
+    \end{itemize}
+  \end{itemize}
+
+  \begin{block}{Trusted $\neq$ Secure}
+    \begin{itemize}
+    \item The Appraiser knows what it is talking to
+    \item Nothing is protected
+    \end{itemize}
+  \end{block}
+
+}
+
 \bibliography{sldg}
 
 \end{document}
