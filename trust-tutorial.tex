@@ -386,10 +386,67 @@ A \emph{chain of trust} from $X_0$ to $X_n$:
     \end{itemize}
   \item Properties
     \begin{itemize}
-    \item Locality --- Access control
-    \item Resettable --- Can a PCR be reset
+    \item Locality --- Access control like OS security rings
+    \item Resettable --- PCR can be reset to known value after \emph{SENTER}
     \item Many others that we don't need yet
     \end{itemize}
+  \end{itemize}
+}
+
+\frame{\frametitle{Resetting PCRs}
+  \begin{block}{Non-Resettable}
+    \begin{itemize}
+    \item History since reboot
+    \item Reset only on reboot
+    \item Good for recording trajectory
+    \end{itemize}
+  \end{block}
+  \begin{block}{Resettable}
+    \begin{itemize}
+    \item No history
+    \item Reset before use
+    \item Good for one-off user data
+    \end{itemize}
+  \end{block}
+
+  \begin{itemize}
+  \item Reset requires appropriate permissions based on locality
+  \item A PCR is resettable if defined in platform spec
+  \end{itemize}
+}
+
+\frame{\frametitle{Locality}
+
+  \begin{block}{Locality = Access Control for PCRs}
+    \begin{itemize}
+    \item Each PCR is assigned a locality
+    \item Only processes with locality greater than or equal a PCR's
+      locality may modify it
+    \item Increases monotonically starting at \texttt{SENTER} invocation
+    \end{itemize}
+  \end{block}
+
+
+  \begin{block}{Locality and What Runs There}
+  \begin{tabular}{ll}
+    \emph{Locality} & \emph{Purpose} \\ \hline\hline
+    4 & Trusted Hardware/SINIT Policy \\
+    3 & Other MLE Components \\
+    2 & Operating System \\
+    1 & Applications Static \\
+    0 & RTM/Legacy \\
+  \end{tabular}
+  \end{block}
+}
+
+\frame{\frametitle{Locality Rules of Thumb}
+
+  \begin{itemize}
+  \item Only SENTER runs in locality 4
+  \item Only SINIT runs in locality 3
+  \item OS and core system run in locality 2
+  \item Applications run in locality 1
+  \item Locality 0 is rarely used
   \end{itemize}
 }
 
@@ -873,40 +930,6 @@ A \emph{chain of trust} from $X_0$ to $X_n$:
 
 }
 
-\frame{\frametitle{Locality}
-
-  \begin{block}{Locality = Access Control for PCRs}
-    \begin{itemize}
-    \item Each PCR is assigned a locality
-    \item Only processes with locality greater than or equal a PCR's
-      locality may modify it
-    \item Increases monotonically starting at \texttt{SENTER} invocation
-    \end{itemize}
-  \end{block}
-
-
-  \begin{block}{Locality and What Runs There}
-  \begin{tabular}{ll}
-    \emph{Locality} & \emph{Purpose} \\ \hline\hline
-    4 & Trusted Hardware/SINIT Policy \\
-    3 & Other MLE Components \\
-    2 & Operating System \\
-    1 & Applications Static \\
-    0 & RTM/Legacy \\
-  \end{tabular}
-  \end{block}
-}
-
-\frame{\frametitle{Locality Rules of Thumb}
-
-  \begin{itemize}
-  \item Only SENTER runs in locality 4
-  \item Only SINIT runs in locality 3
-  \item OS and core system run in locality 2
-  \item Applications run in locality 1
-  \item Locality 0 is rarely used
-  \end{itemize}
-}
 
 \frame{\frametitle{Traditional Measurement Storage}
 
@@ -930,29 +953,6 @@ A \emph{chain of trust} from $X_0$ to $X_n$:
 \end{block}
 
 }
-
-\frame{\frametitle{Resetting PCRs}
-  \begin{block}{Non-Resettable}
-    \begin{itemize}
-    \item History since reboot
-    \item Reset only on reboot
-    \item Good for recording trajectory
-    \end{itemize}
-  \end{block}
-  \begin{block}{Resettable}
-    \begin{itemize}
-    \item No history
-    \item Reset before use
-    \item Good for one-off user data
-    \end{itemize}
-  \end{block}
-
-  \begin{itemize}
-  \item Reset requires appropriate permissions based on locality
-  \item A PCR is resettable if defined in platform spec
-  \end{itemize}
-}
-
 
 \frame{\frametitle{What is in the MLE?}
 
@@ -1019,7 +1019,7 @@ A \emph{chain of trust} from $X_0$ to $X_n$:
   \end{itemize}
 }
 
-\frame{\frametitle{What Should Appraisal Say?}
+\frame{\frametitle{Measurement Options and Appraisal}
   
   \begin{itemize}
   \item Measurement granularity
