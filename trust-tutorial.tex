@@ -163,6 +163,32 @@
 
 }
 
+\frame{\frametitle{Installing Keys}
+
+  \begin{block}{Wrapped Keys}
+      A wrapped key must be installed before use and depends on
+      installation of its wrapping key
+  \end{block}
+  
+
+  \begin{itemize}
+  \item Installing $\wrap{K}{\private{J}}$ provides a handle for use with
+    other commands
+    \begin{itemize}
+    \item The key handle is a pointer into the TPM that cannot
+    \item Cannot be used to access the key outside the TPM
+    \end{itemize}
+  \item $\wrap{K}{\private{J}}$ installs if $\public{J}$ is installed
+    and usable
+    \begin{itemize}
+    \item Key may be installed by not usable if PCRs are not
+      configured or authentication fails
+    \item $\wrap{K}{\private{SRK}}$ wraps a key with a TPM's storage
+      root key
+    \end{itemize}
+  \end{itemize}
+}
+
 \frame{\frametitle{Sealing Data}
 
 \begin{block}{Sealing to State}
@@ -1085,29 +1111,131 @@ A \emph{chain of trust} from $X_0$ to $X_n$:
 
 }
 
-\frame{\frametitle{What The Appraiser Knows}
+\frame{\frametitle{Quotes and Appraisal}
 
-  \begin{itemize}
-  \item On initial measurement after startup
-    \begin{itemize}
-    \item $\extend{0x00..0}{\hash{\mathtt{SINIT Policy}}}$ \texttt{SENTER} and \texttt{SINIT} ran
-    \item $\extend{0x00..0}{\hash{\mathtt{MLE}}}$ \texttt{SINIT} measured the MLE
-    \item MLE was correct on startup
-    \end{itemize}
-  \item On measurement after application startup
-    \begin{itemize}
-    \item $\extend{0x00..0}{\hash{\mathtt{OS}}}$ OS was correct on startup and was started by MLE
-    \item $\extend{0x00..0}{\hash{\mathtt{app}}}$ Application was correct on startup and was started by OS
-    \end{itemize}
-  \end{itemize}
-
-  \begin{block}{Trusted $\neq$ Secure}
-    \begin{itemize}
-    \item The Appraiser knows what it is talking to
-    \item Nothing is protected
-    \end{itemize}
+  \begin{block}{Appraisal}
+    An appraiser evaluates a target by requesting and examining a
+    \emph{quote}
   \end{block}
 
+  \begin{itemize}
+  \item The appraiser requests a quote from the target specifying:
+    \begin{itemize}
+    \item PCRs to be included
+    \item A fresh nonce
+    \end{itemize}
+  \item The target returns a quote containing:
+    \begin{itemize}
+    \item PCR composite as evidence of target state
+    \item The original nonce as evidence of freshness
+    \item $\private{AIK}$ signature as evidence of integrity and
+      authenticity
+    \end{itemize}
+  \end{itemize}
+}
+
+\frame{\frametitle{Generating a Quote}
+
+  \begin{block}{Quote Structure}
+    \[q = \sign{n,PCR}{AIK}\]
+  \end{block}
+
+  \begin{itemize}
+  \item Generate and certify an $\public{AIK}$
+    \begin{itemize}
+    \item TPM generates an $\public{AIK}$ wrapped by $\private{EK}$
+    \item Privacy CA generates a certificate encrypted with
+      $\public{EK}$
+    \item Only generating TPM can decrypt the certificate
+    \end{itemize}
+  \item Install the $\public{AIK}$
+    \begin{itemize}
+    \item AIK is wrapped thus $\private{AIK}$ and inaccessible outside
+      the generating TPM
+    \item Installing AIK makes it available to the TPM
+    \end{itemize}
+  \item Request a quote from the TPM
+    \begin{itemize}
+    \item Nonce, PCRs needed, and AIK handle
+    \item Only the TPM that generated the AIK can generate the quote signature
+    \end{itemize}
+  \end{itemize}
+}
+
+
+\frame{\frametitle{Evaluating a Quote}
+  \begin{itemize}
+  \item Appraiser must have:
+    \begin{itemize}
+    \item Public $\public{CA}$ key
+    \item Public $\public{AIK}$ key
+    \item Original nonce
+    \item Expected PCR values
+    \end{itemize}
+  \item Checking the quote
+    \begin{itemize}
+    \item Check the $\public{AIK}$ certificate signature using
+      public $\public{CA}$
+    \item Check the quote signature using public $\public{AIK}$
+    \item Check the quote nonce value using original nonce value
+    \item Check the PCR composite against an expected golden value
+    \end{itemize}
+  \end{itemize}
+}
+
+\frame{\frametitle{What the Appraiser Knows}
+  \begin{itemize}
+  \item $\public{AIK}$ belongs to the target's TPM from CA certificate
+    check
+  \item The quote was generated using $\public{AIK}$ installed in the
+    target's TPM from quote signature check
+  \item The quote was generated in response to the appraiser's request
+    from nonce check
+  \item Requested TPM PCR's generated the correct composite from
+    composite check
+  \end{itemize}
+}
+
+\frame{\frametitle{What the Appraiser Knows}
+
+  If the PCR composite is correct and includes PCRs 17--20 the
+  appraiser also knows:
+
+  \bigskip
+
+  \begin{tabular}{lll}
+    \textbf{PCR} & \textbf{Value} & \textbf{Conclusion} \\ \hline
+    17 & $\extend{0x00..0}{\hash{\mathtt{SINIT Policy}}}$ &
+                                                            \texttt{SENTER} and \texttt{SINIT} ran \\
+    18 & $\extend{0x00..0}{\hash{\mathtt{MLE}}}$ & \texttt{SINIT}
+                                                   measured the MLE \\
+    19 & $\extend{0x00..0}{\hash{\mathtt{OS}}}$ & OS was correct on
+                                                  startup and  \\
+       & & was started by MLE \\
+    20 & $\extend{0x00..0}{\hash{\mathtt{app}}}$ & Application was
+         correct on \\
+                                                   & & startup and was
+                                                       started by OS \\ 
+  \end{tabular}
+
+  \begin{block}{Initially Good}
+    \begin{itemize}
+    \item Target boot was started by \texttt{SENTER}
+    \item Target is built from good parts in correct order
+    \end{itemize}
+    
+  \end{block}
+
+}
+
+\frame{\frametitle{Trust and Secure}
+  \begin{block}{Trusted $\neq$ Secure}
+    \begin{itemize}
+    \item The appraiser knows whether it is talking to a good target
+    \item Little information available if the target is bad
+    \item The target is only being observed and  not controlled
+    \end{itemize}
+  \end{block}
 }
 
 \bibliography{sldg}
