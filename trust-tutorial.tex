@@ -175,7 +175,7 @@
   \item Installing $\wrap{K}{\private{J}}$ provides a handle for use with
     other commands
     \begin{itemize}
-    \item The key handle is a pointer into the TPM that cannot
+    \item The key handle is a pointer into the TPM
     \item Cannot be used to access the key outside the TPM
     \end{itemize}
   \item $\wrap{K}{\private{J}}$ installs if $\public{J}$ is installed
@@ -1237,6 +1237,197 @@ A \emph{chain of trust} from $X_0$ to $X_n$:
     \end{itemize}
   \end{block}
 }
+
+
+\frame{\frametitle{Protecting Secrets}
+  \begin{itemize}
+  \item Measurement, attestation and appraisal ensure integrity
+  \item Measurement, attestation and appraisal \emph{do not} ensure
+    cnfidentiality
+  \item Bad systems still run and still do bad things
+    \begin{itemize}
+    \item Exfiltrate data
+    \item Spoof identity and data
+    \item Denial of service
+    \end{itemize}
+  \item TPM data protection can prevent data and keys from bad systems
+  \end{itemize}
+}
+
+
+\frame{\frametitle{Protection Mechanisms}
+  \begin{itemize}
+  \item Sealing data to state using a \emph{storage key}
+  \item Binding data to a TPM using a \emph{binding key}
+  \item Integrity checks using NVRAM
+  \end{itemize}
+}
+
+\frame{\frametitle{Sealing Data to State}
+  \begin{block}{Sealing Data}
+    \texttt{TPM\_Seal} encrypts data for use in conjunction with the
+    local TPM using a \emph{storage key}
+  \end{block}
+
+  \begin{itemize}
+  \item Sealing data to state can involve PCRs, password, and locality
+    \begin{itemize}
+    \item PCRs and locality protect data from a bad system
+    \item passwords protect data from a bad user
+    \end{itemize}
+  \item TPM keys are protected by using storage keys
+    \begin{itemize}
+    \item Sealing private key to state
+    \item Installing is unsealing in the TPM
+    \end{itemize}
+  \item The SRK is a storage key
+    \begin{itemize}
+    \item Used like any other storage key
+    \item Always installed and can only be reset with \texttt{TPM\_TakeOwnership}
+    \end{itemize}
+
+  \end{itemize}
+}
+
+\frame{\frametitle{Sealing Data to State}
+  \begin{itemize}
+  \item Installed storage key for encryption
+    \begin{itemize}
+    \item Created by the TPM using \texttt{TPM\_CreateWrapKey}
+    \item Can wrap or seal the storage key as well as data
+    \end{itemize}
+  \item Password (optional)
+    \begin{itemize}
+    \item Called \emph{authdata}
+    \item Provided by caller during unseal
+    \end{itemize}
+  \item PCR values expected for decryption (optional)
+    \begin{itemize}
+    \item Which PCRs and their values as composite
+    \item Will not decrypt if TPM PCRs do not match expected PCRs
+    \end{itemize}
+  \item Locality constraints on decryption (optional)
+    \begin{itemize}
+    \item Access control like PCR access
+    \item Must be in locality greater or equal to specified locality
+    \end{itemize}
+  \end{itemize}
+}
+
+\frame{\frametitle{Binding Data to TPM}
+  \begin{block}{Binding Data}
+    Binding encrypts data for any TPM using a \emph{binding key}
+  \end{block}
+
+  \begin{itemize}
+  \item Binding is performed outside the TPM
+    \begin{itemize}
+    \item Simple encryption using public part of binding key
+    \item No PCR, locality or authdata constraints
+    \end{itemize}
+  \item Unbinding is performed by the TPM
+    \begin{itemize}
+    \item TPM key used for encryption must be installed in the TPM
+    \item Key \emph{can} be sealed to state providing additinoal protection
+    \end{itemize}
+  \item Remember a TPM key's public key is always in the clear
+    \begin{itemize}
+    \item Allows for binding away from the TPM
+    \item Allows for signature checking away from the TPM
+    \end{itemize}
+  \end{itemize}
+}
+
+\frame{\frametitle{Binding Data to TPM}
+  \begin{itemize}
+  \item Binding key for encryption
+    \begin{itemize}
+    \item Need not be installed in the target TPM fnr binding
+    \item Encryption performed outside the TPM using public key
+    \item Private key is never exposed during binding
+    \end{itemize}
+  \item Bound data is simply encrypted
+    \begin{itemize}
+    \item No options for incuding state or locality
+    \end{itemize}
+  \item Binding Key can be protected as any sealed data
+    \begin{itemize}
+    \item Sealed to state, lcoality, authdata
+    \item Binding key implements enveloping
+    \end{itemize}
+  \end{itemize}
+}
+
+\frame{\frametitle{Using NVRAM}
+  \begin{block}{NVRAM}
+    NVRAM is a place to put things before boot for use by TPM and
+    system software
+  \end{block}
+
+  \begin{itemize}
+  \item Minimum size only 1280 bytes
+  \item Limited number of writes and can be burned out
+  \item Access control defined for regions like keys
+    \begin{itemize}
+    \item PCR contents, locality, authdata
+    \item Doesn't protect anything beyond access control
+    \end{itemize}
+  \end{itemize}
+}
+
+\frame{\frametitle{Using NVRAM}
+  \begin{itemize}
+  \item Stores small data
+    \begin{itemize}
+    \item Harder to modify than traditional data on disk or in memory
+    \item Availble for reference checking during operation
+    \end{itemize}
+  \item Typical NVRAM contents include:
+    \begin{itemize}
+    \item Hashes for integrity checking
+    \item Trusted public keys for signature checking and encryption
+    \item Certificates for authentication checks
+    \end{itemize}
+  \item Useful for:
+    \begin{itemize}
+    \item User-defined sentinal values for trusted boot
+    \item Initializing Certificate Authority keys or server addresses
+    \item Hashes of critical software or data for checking during boot
+    \item Public key for verifying owner signatures
+    \item Providing resources for early boot
+    \end{itemize}
+  \end{itemize}
+}
+
+\frame{\frametitle{Protecting Data (Redux)}
+  \begin{block}{Sealing, Binding and NVRAM}
+    TPM operations provide data protection ranging from simple
+    integrity checks to confidentiality, integrity and system state.
+  \end{block}
+  \begin{itemize}
+  \item Check hash of downloaded software or software from disk using
+    NVRAM hash
+    \begin{itemize}
+    \item Hash failure implies bad software
+    \end{itemize}
+  \item Check signture of downloaded softare or software from disk
+    using NVRAM key
+    \begin{itemize}
+    \item Signature check failer implies bad software or bad signature
+    \end{itemize}
+  \item Seal critical boot/operational data to state
+    \begin{itemize}
+    \item Wrong state implies data will not unseal
+    \end{itemize}
+  \item Bind transmitted image/data to TPM with sealed key
+    \begin{itemize}
+    \item Confidentiality preserved by encryption
+    \item State ensured by sealed key
+    \end{itemize}
+  \end{itemize}
+}
+
+
 
 \bibliography{sldg}
 
