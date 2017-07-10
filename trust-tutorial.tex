@@ -313,7 +313,7 @@
 \frame{\frametitle{Trust is a Preorder}
 
   $\trusts{x}{y}$ is an homogeneous relation over actors that is true
-  when \emph{x trusts y}.  $\trusts{x}{y}$ is by definition a preorer:
+  when \emph{x trusts y}.  $\trusts{x}{y}$ is by definition a Preorder:
 
   \begin{itemize}
   \item Reflexive --- $\forall x \cdot \trusts{x}{x}$
@@ -341,8 +341,8 @@ A \emph{chain of trust} from $X_0$ to $X_n$:
 }
 
 \frame{\frametitle{Trusted Platform Module}
-  The \emph{Trusted Platform Module (TPM)} is a cryptographic
-  coprocessor for trust.
+  The \emph{Trusted Platform Module (TPM)} is a cryptography
+  co-processor for trust.
 
   \begin{itemize}
   \item Endorsement Key (EK) --- factory generated asymmetric key
@@ -801,7 +801,7 @@ A \emph{chain of trust} from $X_0$ to $X_n$:
 
   Protocol notation specifies communication:
 
-  \[\msg{Sender}{Receiver}{Messsage}\]
+  \[\msg{Sender}{Receiver}{Message}\]
 
   \begin{block}{Key Certification Protocol}
   \begin{eqnarray}
@@ -1243,7 +1243,7 @@ A \emph{chain of trust} from $X_0$ to $X_n$:
   \begin{itemize}
   \item Measurement, attestation and appraisal ensure integrity
   \item Measurement, attestation and appraisal \emph{do not} ensure
-    cnfidentiality
+    confidentiality
   \item Bad systems still run and still do bad things
     \begin{itemize}
     \item Exfiltrate data
@@ -1328,7 +1328,7 @@ A \emph{chain of trust} from $X_0$ to $X_n$:
   \item Unbinding is performed by the TPM
     \begin{itemize}
     \item TPM key used for encryption must be installed in the TPM
-    \item Key \emph{can} be sealed to state providing additinoal protection
+    \item Key \emph{can} be sealed to state providing additional protection
     \end{itemize}
   \item Remember a TPM key's public key is always in the clear
     \begin{itemize}
@@ -1342,17 +1342,17 @@ A \emph{chain of trust} from $X_0$ to $X_n$:
   \begin{itemize}
   \item Binding key for encryption
     \begin{itemize}
-    \item Need not be installed in the target TPM fnr binding
+    \item Need not be installed in the target TPM for binding
     \item Encryption performed outside the TPM using public key
     \item Private key is never exposed during binding
     \end{itemize}
   \item Bound data is simply encrypted
     \begin{itemize}
-    \item No options for incuding state or locality
+    \item No options for including state or locality
     \end{itemize}
   \item Binding Key can be protected as any sealed data
     \begin{itemize}
-    \item Sealed to state, lcoality, authdata
+    \item Sealed to state, locality, authdata
     \item Binding key implements enveloping
     \end{itemize}
   \end{itemize}
@@ -1380,7 +1380,7 @@ A \emph{chain of trust} from $X_0$ to $X_n$:
   \item Stores small data
     \begin{itemize}
     \item Harder to modify than traditional data on disk or in memory
-    \item Availble for reference checking during operation
+    \item Available for reference checking during operation
     \end{itemize}
   \item Typical NVRAM contents include:
     \begin{itemize}
@@ -1390,7 +1390,7 @@ A \emph{chain of trust} from $X_0$ to $X_n$:
     \end{itemize}
   \item Useful for:
     \begin{itemize}
-    \item User-defined sentinal values for trusted boot
+    \item User-defined sentinel values for trusted boot
     \item Initializing Certificate Authority keys or server addresses
     \item Hashes of critical software or data for checking during boot
     \item Public key for verifying owner signatures
@@ -1410,10 +1410,10 @@ A \emph{chain of trust} from $X_0$ to $X_n$:
     \begin{itemize}
     \item Hash failure implies bad software
     \end{itemize}
-  \item Check signture of downloaded softare or software from disk
+  \item Check signature of downloaded software or software from disk
     using NVRAM key
     \begin{itemize}
-    \item Signature check failer implies bad software or bad signature
+    \item Signature check failure implies bad software or bad signature
     \end{itemize}
   \item Seal critical boot/operational data to state
     \begin{itemize}
