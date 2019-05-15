@@ -1,5 +1,5 @@
 This is a slide presentation about Trust intended for tutorial style
-presentatio in our ArmoredSoftware meetings.
+presentation in our ArmoredSoftware meetings.
 
 The style is derived from a KU Beamer template that is an initial stab
 at a beamer template for producing slide presentations with a KU look,
